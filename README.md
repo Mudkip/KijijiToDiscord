@@ -10,3 +10,10 @@ Written and tested with Python 3.9.6.
 2. Install requirements using ``pip install -r requirements.txt``
 3. Copy .env.dist to .env and fill it in
 4. Run the bot using ``python bot.py``
+
+## Commands:
+All commands have a prefix, by default it is "?" (e.g. ?setchannel #channel)
+|Command|Description|
+|---|---|
+|addurl|Add url to list of urls for scraping|
+|setchannel #channel|Sets the channel to which the ads will be posted. If a channel is not set, ads won't be posted.|
