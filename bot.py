@@ -97,7 +97,8 @@ async def run_scraper():
 @bot.command()
 async def addurl(ctx, url: str):
     """Adds a url for kijiji bot to track."""
-    if url in scrape_urls:
+    
+    if ctx.message.guild in scrape_urls and url in scrape_urls[ctx.message.guild]:
         await ctx.send('This URL is already being tracked.')
     elif re.match(r'^https:\/\/www\.kijiji\.ca\/b-[\w+-]+(\/[\w+-]+)?(\/[\w+-]+)?\/[\w+-]+$', url):
         res = requests.get(url, headers={'User-Agent': os.getenv('USER_AGENT')})
