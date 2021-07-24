@@ -97,7 +97,7 @@ async def run_scraper():
 
 @bot.command()
 async def addurl(ctx, url: str):
-    """Adds a url for kijiji bot to track."""
+    """Adds a url for kijiji bot to track"""
     
     if ctx.message.guild in scrape_urls and url in scrape_urls[ctx.message.guild]:
         await ctx.send('This URL is already being tracked.')
@@ -116,7 +116,30 @@ async def addurl(ctx, url: str):
         await ctx.send('Invalid Kijiji URL. Make sure you are copying the URL from your browser and that there are no extra query params.')
 
 @bot.command()
+async def listurls(ctx):
+    """Prints a list of URLs being tracked in a guild"""
+    if ctx.message.guild in scrape_urls:
+        to_send = "List of Kijiji URLs being tracked: \n"
+        for url in scrape_urls[ctx.message.guild]:
+            to_send = to_send + "<" + url + ">\n"
+        await ctx.send(to_send)
+    else:
+        await ctx.send('There are no Kijiji URLs currently being tracked for this guild.')
+
+@bot.command()
+async def removeurl(ctx, url: str):
+    """Removes a URL from tracking"""
+    if ctx.message.guild in scrape_urls and url in scrape_urls[ctx.message.guild]:
+        scrape_urls[ctx.message.guild].remove(url)
+        bot.db.execute("DELETE FROM track_urls WHERE url=? AND guild=?", (url, ctx.message.guild.id))
+        bot.db.commit()
+        await ctx.send('That URL won\'t be tracked anymore')
+    else:
+        await ctx.send('Nothing to do. URL is not being tracked.')
+
+@bot.command()
 async def setchannel(ctx, channel: discord.TextChannel = None):
+    """Sets the channel for the ad dumps"""
     if not (ctx.message.guild in guild_channels) or guild_channels[ctx.message.guild] != channel:
         bot.db.execute('INSERT OR REPLACE INTO guild_channels(guild, channel) VALUES(?,?)', (ctx.message.guild.id, channel.id))
         bot.db.commit()
