@@ -44,9 +44,10 @@ async def on_ready():
         """)
         bot.db.execute("""
             CREATE TABLE IF NOT EXISTS seen_ads (
-                id INTEGER PRIMARY KEY,
                 ad_id INT NOT NULL,
-                timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                guild VARCHAR(32) NOT NULL,
+                timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (ad_id, guild)
             )
         """)
         bot.db.commit()
@@ -86,12 +87,12 @@ async def run_scraper():
                 ad_list = ad_map['ads']
                 for ad in ad_list:
                     ad_id = int(ad['id'])
-                    cur.execute('SELECT EXISTS(SELECT 1 FROM seen_ads WHERE ad_id=? LIMIT 1)', (ad_id,))
+                    cur.execute('SELECT EXISTS(SELECT 1 FROM seen_ads WHERE ad_id=? AND guild=? LIMIT 1)', (ad_id, guild.id))
                     exists = cur.fetchone()[0]
                     if exists == 0:
-                        bot.db.execute('INSERT INTO seen_ads(ad_id) VALUES(?)', (ad_id,))
-                        bot.db.commit()
+                        bot.db.execute('INSERT INTO seen_ads(ad_id, guild) VALUES(?,?)', (ad_id, guild.id))
                         await chan.send(await format_ad(ad))
+                bot.db.commit()
                         
 
 @bot.command()
@@ -136,7 +137,7 @@ async def get_ad_dump_channel(guild):
 
 async def format_ad(ad_dic):
     return dedent(f"""
-        ============================================
+        ===========================================
         :newspaper: **Kijiji Ad - {ad_dic['title']}!**
         Title: ``{ad_dic['title']}``
         Price: ``{ad_dic['price']}``
