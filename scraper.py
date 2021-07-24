@@ -30,12 +30,15 @@ class Scraper:
         ads = []
         for ad in ad_divs:
             info = ad.find("div", class_="info-container")
+            desc = info.find("div", class_="description").find(text=True, recursive=False).strip()
+            title = info.find("a", class_="title").find(text=True, recursive=False).strip()
+            price = info.find("div", class_="price").find(text=True, recursive=False).strip()
             ads.append({
                 'id': ad['data-listing-id'],
                 'url': 'https://www.kijiji.ca' + ad['data-vip-url'],
-                'title': info.find("a", class_="title").get_text(strip=True),
-                'price': info.find("div", class_="price").get_text(strip=True),
-                'desc': info.find("div", class_="description").get_text(strip=True)
+                'title': title.replace('`','\'').replace('*', ''),
+                'price': price if price else 'Not specified',
+                'desc': desc.replace('`','\'') if desc else 'Not specified'
             })
         return ads
     

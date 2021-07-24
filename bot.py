@@ -136,8 +136,8 @@ async def get_ad_dump_channel(guild):
 
 async def format_ad(ad_dic):
     return dedent(f"""
-        ====================================================
-        :newspaper: **New Kijiji Ad (ID: {ad_dic['id']})!**
+        ============================================
+        :newspaper: **Kijiji Ad - {ad_dic['title']}!**
         Title: ``{ad_dic['title']}``
         Price: ``{ad_dic['price']}``
         Description:```{ad_dic['desc']}```
