@@ -257,7 +257,7 @@ async def viewnotify(ctx):
         keyword_string += discord.utils.escape_mentions(keyword[0]) + "\n"
     if keyword_string != "":
         await ctx.send(
-            f"You have setup notifications for the following keywords:\n {keyword_string}"
+            f"You have setup notifications for the following keywords:\n{keyword_string}"
         )
     else:
         await ctx.send("You do not have any keyword notifications setup.")
