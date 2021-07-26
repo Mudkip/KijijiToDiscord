@@ -223,9 +223,9 @@ async def notify(ctx, *, keyword: str):
 
 @bot.command()
 async def unnotify(ctx, *, keyword: str):
+    """Stops the bot from pinging you for a certain keyword"""
     author = ctx.message.author
     guild = ctx.message.guild
-    """Stops the bot from pinging you for a certain keyword"""
     if (
         guild not in keyword_pings
         or keyword not in keyword_pings[guild]
@@ -245,6 +245,7 @@ async def unnotify(ctx, *, keyword: str):
 
 @bot.command()
 async def viewnotify(ctx):
+    """View all the keyword notifications you have setup"""
     author = ctx.message.author.id
     guild = ctx.message.guild.id
     cur = bot.db.cursor()
