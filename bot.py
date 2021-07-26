@@ -209,6 +209,7 @@ async def notify(ctx, *, keyword: str):
         if keyword not in keyword_pings[guild]:
             keyword_pings[guild][keyword] = []
 
+        if author not in keyword_pings[guild][keyword]:
         keyword_pings[guild][keyword].append(author)
 
         bot.db.execute(
