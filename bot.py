@@ -14,6 +14,7 @@ from scraper import Scraper
 bot = commands.Bot(command_prefix="?")
 guild_channels = {}
 scrape_urls = {}
+keyword_pings = {}
 
 
 @bot.event
@@ -44,8 +45,10 @@ async def on_ready():
             """
             CREATE TABLE IF NOT EXISTS keyword_pings (
                 id INTEGER PRIMARY KEY,
-                user VARCHAR(64) NOT NULL,
-                keyword VARCHAR(32) NOT NULL
+                user VARCHAR(32) NOT NULL,
+                guild VARCHAR(32) NOT NULL,
+                keyword VARCHAR(32) NOT NULL,
+                UNIQUE (user, guild, keyword)
             )
         """
         )
@@ -62,16 +65,29 @@ async def on_ready():
         bot.db.commit()
         print("SQLite tables initialized.")
     except Exception as e:
-        print(f"Unexpected error while loading SQLite database: \n {e}")
+        print(f"Unexpected error while loading SQLite database: \n {str(e)}")
 
-    cur = bot.db.cursor()
     print("Loading guilds and their channels")
+    cur = bot.db.cursor()
     for guild_id, channel_id in cur.execute(
         "SELECT guild, channel FROM guild_channels"
     ):
         guild = bot.get_guild(int(guild_id))
         channel = bot.get_channel(int(channel_id))
         guild_channels[guild] = channel
+
+    print("Loading notification requests")
+    for guild_id, user_id, keyword in cur.execute(
+        "SELECT guild, user, keyword FROM keyword_pings"
+    ):
+        guild = bot.get_guild(int(guild_id))
+        if guild not in keyword_pings:
+            keyword_pings[guild] = {}
+
+        if keyword not in keyword_pings[guild]:
+            keyword_pings[guild][keyword] = []
+
+        keyword_pings[guild][keyword].append(await bot.fetch_user(int(user_id)))
 
     print("Loading scrape URLs")
     for guild_id, url in cur.execute("SELECT guild, url FROM track_urls"):
@@ -85,8 +101,15 @@ async def on_ready():
     print("All done!")
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("A parameter is missing. Check help.")
+
+
 @tasks.loop(minutes=5)
 async def run_scraper():
+    await bot.wait_until_ready()
     scraper = Scraper(scrape_urls)
     await scraper.execute()
     cur = bot.db.cursor()
@@ -108,7 +131,7 @@ async def run_scraper():
                             "INSERT INTO seen_ads(ad_id, guild) VALUES(?,?)",
                             (ad_id, guild.id),
                         )
-                        await chan.send(await format_ad(ad))
+                        await chan.send(await format_ad(ad, guild))
                 bot.db.commit()
 
 
@@ -172,6 +195,75 @@ async def removeurl(ctx, url: str):
 
 
 @bot.command()
+async def notify(ctx, *, keyword: str):
+    """Makes bot ping you if an ad with the provided keyword is found. Maximum 32 characters per keyword."""
+    if len(keyword) > 32:
+        await ctx.send("The maximum length of a keyword is currently 32 characters.")
+    else:
+        author = ctx.message.author
+        guild = ctx.message.guild
+
+        if guild not in keyword_pings:
+            keyword_pings[guild] = {}
+
+        if keyword not in keyword_pings[guild]:
+            keyword_pings[guild][keyword] = []
+
+        keyword_pings[guild][keyword].append(author)
+
+        bot.db.execute(
+            "INSERT OR IGNORE INTO keyword_pings(user, guild, keyword) VALUES(?,?,?)",
+            (author.id, guild.id, keyword),
+        )
+        bot.db.commit()
+        await ctx.send(
+            "Ok. You will be pinged if an ad with the provided keyword is found."
+        )
+
+
+@bot.command()
+async def unnotify(ctx, *, keyword: str):
+    author = ctx.message.author
+    guild = ctx.message.guild
+    """Stops the bot from pinging you for a certain keyword"""
+    if (
+        guild not in keyword_pings
+        or keyword not in keyword_pings[guild]
+        or author not in keyword_pings[guild][keyword]
+    ):
+        await ctx.send("You did not setup notifications for this keyword.")
+    else:
+        keyword_pings[guild][keyword].remove(author)
+        bot.db.execute(
+            "DELETE FROM keyword_pings WHERE user = ? AND guild = ? AND keyword = ?",
+            (author.id, guild.id, keyword),
+        )
+        bot.db.commit()
+
+        await ctx.send("Ok. You will not be pinged for this keyword anymore.")
+
+
+@bot.command()
+async def viewnotify(ctx):
+    author = ctx.message.author.id
+    guild = ctx.message.guild.id
+    cur = bot.db.cursor()
+    keyword_string = ""
+    keywords = cur.execute(
+        "SELECT keyword FROM keyword_pings WHERE user = ? AND guild = ?",
+        (author, guild),
+    )
+    for keyword in keywords:
+        keyword_string += discord.utils.escape_mentions(keyword[0]) + "\n"
+    if keyword_string != "":
+        await ctx.send(
+            f"You have setup notifications for the following keywords:\n {keyword_string}"
+        )
+    else:
+        await ctx.send("You do not have any keyword notifications setup.")
+
+
+@bot.command()
 async def setchannel(ctx, channel: discord.TextChannel = None):
     """Sets the channel for the ad dumps"""
     if (
@@ -201,17 +293,25 @@ async def get_ad_dump_channel(guild):
     return None
 
 
-async def format_ad(ad_dic):
-    return dedent(
+async def format_ad(ad_dic, guild):
+    base_message = dedent(
         f"""
         ===========================================
         :newspaper: **Kijiji Ad - {ad_dic['title']}!**
         Title: ``{ad_dic['title']}``
         Price: ``{ad_dic['price']}``
         Description:```{ad_dic['desc']}```
-        {ad_dic['url']}
+        {ad_dic['url']}\n
     """
     )
+
+    if guild in keyword_pings:
+        for keyword, users in keyword_pings[guild].items():
+            if keyword in ad_dic["title"] or keyword in ad_dic["desc"]:
+                for user in users:
+                    base_message += user.mention
+
+    return base_message
 
 
 bot.run(os.getenv("DISCORD_TOKEN"))
