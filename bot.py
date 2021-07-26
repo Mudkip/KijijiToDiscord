@@ -309,7 +309,7 @@ async def format_ad(ad_dic, guild):
 
     if guild in keyword_pings:
         for keyword, users in keyword_pings[guild].items():
-            if keyword in ad_dic["title"] or keyword in ad_dic["desc"]:
+            if keyword in ad_dic["title"].lower() or keyword in ad_dic["desc"].lower():
                 for user in users:
                     base_message += user.mention
 
