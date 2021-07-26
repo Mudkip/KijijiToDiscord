@@ -210,7 +210,7 @@ async def notify(ctx, *, keyword: str):
             keyword_pings[guild][keyword] = []
 
         if author not in keyword_pings[guild][keyword]:
-        keyword_pings[guild][keyword].append(author)
+            keyword_pings[guild][keyword].append(author)
 
         bot.db.execute(
             "INSERT OR IGNORE INTO keyword_pings(user, guild, keyword) VALUES(?,?,?)",
