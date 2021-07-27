@@ -325,7 +325,7 @@ async def format_ad(ad_dic, guild):
         """
     )
 
-    return await append_tags(ad_dic, guild, message)
+    return await append_tags(ad_dic, guild, base_message)
 
 
 def containsKeyword(haystack, needle):
