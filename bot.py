@@ -200,6 +200,7 @@ async def notify(ctx, *, keyword: str):
     if len(keyword) > 32:
         await ctx.send("The maximum length of a keyword is currently 32 characters.")
     else:
+        keyword = keyword.lower()
         author = ctx.message.author
         guild = ctx.message.guild
 
@@ -225,6 +226,7 @@ async def notify(ctx, *, keyword: str):
 @bot.command()
 async def unnotify(ctx, *, keyword: str):
     """Stops the bot from pinging you for a certain keyword"""
+    keyword = keyword.lower()
     author = ctx.message.author
     guild = ctx.message.guild
     if (
@@ -295,25 +297,43 @@ async def get_ad_dump_channel(guild):
     return None
 
 
+async def append_tags(ad_dic, message, guild):
+    if guild in keyword_pings:
+        atted = {}
+        for keyword, users in keyword_pings[guild].items():
+            if containsKeyword(ad_dic["title"], keyword) or containsKeyword(
+                ad_dic["desc"], keyword
+            ):
+                for user in users:
+                    if user not in atted:
+                        atted[user.id] = True
+                        message += (
+                            user.mention + " - " + f"tagged for keyword '{keyword}'\n"
+                        )
+    return message
+
+
 async def format_ad(ad_dic, guild):
-    base_message = dedent(
-        f"""
-        ===========================================
+    return await append_tags(
+        ad_dic,
+        dedent(
+            f"""===========================================
         :newspaper: **Kijiji Ad - {ad_dic['title']}!**
         Title: ``{ad_dic['title']}``
         Price: ``{ad_dic['price']}``
         Description:```{ad_dic['desc']}```
         {ad_dic['url']}\n
-    """
+        """
+        ),
+        guild,
     )
 
-    if guild in keyword_pings:
-        for keyword, users in keyword_pings[guild].items():
-            if keyword in ad_dic["title"].lower() or keyword in ad_dic["desc"].lower():
-                for user in users:
-                    base_message += user.mention
 
-    return base_message
+def containsKeyword(haystack, needle):
+    return (
+        re.compile(r"\b({0})\b".format(needle), flags=re.IGNORECASE).search(haystack)
+        != None
+    )
 
 
 bot.run(os.getenv("DISCORD_TOKEN"))
