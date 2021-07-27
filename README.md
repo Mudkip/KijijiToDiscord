@@ -16,4 +16,8 @@ All commands have a prefix, by default it is "?" (e.g. ?setchannel #channel)
 |Command|Description|
 |---|---|
 |addurl|Add url to list of urls for scraping|
-|setchannel #channel|Sets the channel to which the ads will be posted. If a channel is not set, ads won't be posted.|
+|removeurl|Remove a url from the list of urls for scraping|
+|setchannel #channel|Sets the channel to which the ads will be posted. If a channel is not set, ads won't be posted|
+|notify keyword|Makes bot tag you if an ad with the specified keyword is found. Maximum 32 characters per keyword|
+|unnotify keyword|Stops the bot from tagging you for ads with the specified keyword|
+|viewnotify|View all the keyword notifications you have setup|
