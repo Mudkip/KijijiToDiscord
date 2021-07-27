@@ -297,7 +297,7 @@ async def get_ad_dump_channel(guild):
     return None
 
 
-async def append_tags(ad_dic, message, guild):
+async def append_tags(ad_dic, guild, message):
     if guild in keyword_pings:
         atted = {}
         for keyword, users in keyword_pings[guild].items():
@@ -314,19 +314,18 @@ async def append_tags(ad_dic, message, guild):
 
 
 async def format_ad(ad_dic, guild):
-    return await append_tags(
-        ad_dic,
-        dedent(
-            f"""===========================================
+    base_message = dedent(
+        f"""
+        ===========================================
         :newspaper: **Kijiji Ad - {ad_dic['title']}!**
         Title: ``{ad_dic['title']}``
         Price: ``{ad_dic['price']}``
         Description:```{ad_dic['desc']}```
         {ad_dic['url']}\n
         """
-        ),
-        guild,
     )
+
+    return await append_tags(ad_dic, guild, message)
 
 
 def containsKeyword(haystack, needle):
