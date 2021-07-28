@@ -330,7 +330,7 @@ async def format_ad(ad_dic, guild):
 
 def containsKeyword(haystack, needle):
     return (
-        re.compile(r"\b({0})\b".format(needle), flags=re.IGNORECASE).search(haystack)
+        re.compile(r"\b({0})\b".format(re.escape(needle)), flags=re.IGNORECASE).search(haystack)
         != None
     )
 
