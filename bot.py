@@ -306,7 +306,7 @@ async def append_tags(ad_dic, guild, message):
             ):
                 for user in users:
                     if user not in atted:
-                        atted[user.id] = True
+                        atted[user] = True
                         message += (
                             user.mention + " - " + f"tagged for keyword '{keyword}'\n"
                         )
